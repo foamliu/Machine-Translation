@@ -4,7 +4,7 @@ from keras.layers import Input, Dense, CuDNNLSTM, Concatenate, Bidirectional, Re
 from keras.models import Model
 from keras.utils import plot_model
 
-from config import n_s, n_a, vocab_size_zh, embedding_size, Tx, Ty
+from config import n_s, n_a, vocab_size_en, embedding_size, Tx, Ty
 
 
 def softmax(x, axis=1):
@@ -55,7 +55,7 @@ def build_model():
         context = one_step_attention(a, s)
         context_dropout = Dropout(0.5)(context)
         s, _, c = CuDNNLSTM(n_s, return_state=True)(context_dropout, initial_state=[s, c])
-        out = Dense(vocab_size_zh, activation='softmax', name='y_' + str(t))(s)
+        out = Dense(vocab_size_en, activation='softmax', name='y_' + str(t))(s)
         outputs.append(out)
 
     model = Model(inputs=[X, s0, c0], outputs=outputs)
