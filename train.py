@@ -40,7 +40,7 @@ if __name__ == '__main__':
     if pretrained_path is not None:
         new_model.load_weights(pretrained_path)
 
-    adam = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, decay=0.01)
+    adam = keras.optimizers.Adam(lr=0.005, beta_1=0.9, beta_2=0.999, decay=0.01)
     new_model.compile(optimizer=adam, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     print(new_model.summary())
