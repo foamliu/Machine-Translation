@@ -13,8 +13,8 @@ class DataGenSequence(Sequence):
     def __init__(self, usage):
         self.usage = usage
 
-        print('loading fasttext word embedding(en)')
-        self.word_vectors_en = KeyedVectors.load_word2vec_format('data/wiki.en.vec')
+        print('loading CWV word embedding(zh)')
+        self.word_vectors_zh = KeyedVectors.load_word2vec_format('data/sgns.merge.char')
 
         print('loading {} samples'.format(usage))
         if usage == 'train':
@@ -52,7 +52,7 @@ class DataGenSequence(Sequence):
                 elif word == unknown_word:
                     embedding = unknown_embedding
                 else:
-                    embedding = self.word_vectors_en[word]
+                    embedding = self.word_vectors_zh[word]
                 batch_x[i_batch, idx] = embedding
 
             output_size = min(Ty, len(sample['output']))
