@@ -68,7 +68,7 @@ def build_train_vocab_en():
 
 def build_train_vocab_zh():
     print('loading word embedding(zh)')
-    word_vectors = KeyedVectors.load_word2vec_format('data/wiki.en.vec')
+    word_vectors = KeyedVectors.load_word2vec_format('data/sgns.merge.char')
     translation_path = os.path.join(train_translation_folder, train_translation_zh_filename)
 
     with open(translation_path, 'r') as f:
