@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-batch_size = 160
+batch_size = 128
 epochs = 10000
 patience = 50
 num_train_samples = 9903244
@@ -12,9 +12,9 @@ vocab_size_zh = 663567
 max_token_length_en = Tx = 50
 max_token_length_zh = Ty = 50
 # hidden state size of the post-attention LSTM
-n_s = 96
+n_s = 128
 # hidden state size of the Bi-LSTM
-n_a = 48
+n_a = 64
 
 
 train_folder = 'data/ai_challenger_translation_train_20170912'
