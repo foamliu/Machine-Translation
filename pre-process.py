@@ -54,14 +54,14 @@ def build_train_vocab_en():
     vocab.append(stop_word)
     vocab.append(unknown_word)
 
-    print('max_len(zh): ' + str(max_len))
+    print('max_len(en): ' + str(max_len))
     print('longest_sentence: ' + longest_sentence)
-    print('count of words in text (zh): ' + str(len(list(counter.keys()))))
-    print('vocab size (zh): ' + str(len(vocab)))
+    print('count of words in text (en): ' + str(len(list(counter.keys()))))
+    print('vocab size (en): ' + str(len(vocab)))
     total_count = len(list(counter.elements()))
     print('coverage: ' + str(covered_count / total_count))
 
-    filename = 'data/vocab_train_zh.p'
+    filename = 'data/vocab_train_en.p'
     with open(filename, 'wb') as file:
         pickle.dump(vocab, file)
 
