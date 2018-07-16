@@ -4,7 +4,7 @@ import pickle
 import random
 
 import keras.backend as K
-import nltk
+import jieba
 import numpy as np
 from gensim.models import KeyedVectors
 
@@ -19,15 +19,15 @@ if __name__ == '__main__':
     model = build_model()
     model.load_weights(model_weights_path)
 
-    print('loading fasttext word embedding(en)')
-    word_vectors_en = KeyedVectors.load_word2vec_format('data/wiki.en.vec')
-
-    vocab_en = pickle.load(open('data/vocab_train_en.p', 'rb'))
-    vocab_set_en = set(vocab_en)
+    print('loading CWV word embedding(zh)')
+    word_vectors_zh = KeyedVectors.load_word2vec_format('data/sgns.merge.char')
 
     vocab_zh = pickle.load(open('data/vocab_train_zh.p', 'rb'))
-    idx2word_zh = vocab_zh
-    word2idx_zh = dict(zip(idx2word_zh, range(len(vocab_zh))))
+    vocab_set_zh = set(vocab_zh)
+
+    vocab_en = pickle.load(open('data/vocab_train_en.p', 'rb'))
+    idx2word_en = vocab_en
+    word2idx_en = dict(zip(idx2word_en, range(len(vocab_en))))
 
     print(model.summary())
 
@@ -51,30 +51,30 @@ if __name__ == '__main__':
 
     for i in range(length):
         idx = samples[i]
-        sentence_en = data_en[idx]
+        sentence_zh = data_zh[idx]
         input_en = []
-        tokens = nltk.word_tokenize(sentence_en)
-        for j, token in enumerate(tokens):
-            if token in vocab_set_en:
+        seg_list = jieba.cut(sentence_zh)
+        for j, token in enumerate(seg_list):
+            if token in vocab_set_zh:
                 word = token
             else:
                 word = unknown_word
-            batch_x[i, j] = word_vectors_en[word]
+            batch_x[i, j] = word_vectors_zh[word]
 
-        batch_x[i, j + 1] = word_vectors_en[stop_word]
+        batch_x[i, j + 1] = word_vectors_zh[stop_word]
 
     s0 = np.zeros((length, n_s))
     c0 = np.zeros((length, n_s))
     preds = model.predict([batch_x, s0, c0])
 
-    output_zh = []
+    output_en = []
     for i in range(length):
         output = preds[i]
         for t in range(Ty):
-            word_pred = idx2word_zh[np.argmax(output)]
-            output_zh.append(word_pred)
+            word_pred = idx2word_en[np.argmax(output)]
+            output_en.append(word_pred)
             if word_pred == stop_word:
                 break
-        print(' '.join(output_zh))
+        print(' '.join(output_en))
 
     K.clear_session()
