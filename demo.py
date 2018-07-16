@@ -3,12 +3,12 @@ import os
 import pickle
 import random
 
-import keras.backend as K
 import jieba
+import keras.backend as K
 import numpy as np
 from gensim.models import KeyedVectors
 
-from config import stop_word, unknown_word, Tx, Ty, embedding_size, n_s
+from config import stop_word, unknown_word, Tx, Ty, embedding_size, n_s, unknown_embedding, stop_embedding
 from config import valid_translation_folder, valid_translation_en_filename, valid_translation_zh_filename
 from model import build_model
 
@@ -57,11 +57,12 @@ if __name__ == '__main__':
         for j, token in enumerate(seg_list):
             if token in vocab_set_zh:
                 word = token
+                batch_x[i, j] = word_vectors_zh[word]
             else:
                 word = unknown_word
-            batch_x[i, j] = word_vectors_zh[word]
+                batch_x[i, j] = unknown_embedding
 
-        batch_x[i, j + 1] = word_vectors_zh[stop_word]
+        batch_x[i, j + 1] = stop_embedding
 
     s0 = np.zeros((length, n_s))
     c0 = np.zeros((length, n_s))
