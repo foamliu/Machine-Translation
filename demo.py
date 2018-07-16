@@ -8,7 +8,7 @@ import keras.backend as K
 import numpy as np
 from gensim.models import KeyedVectors
 
-from config import stop_word, unknown_word, Tx, Ty, embedding_size, n_s, unknown_embedding, stop_embedding
+from config import stop_word, unknown_word, Tx, Ty, embedding_size, n_s, unknown_embedding, stop_embedding, vocab_size_en
 from config import valid_translation_folder, valid_translation_en_filename, valid_translation_zh_filename
 from model import build_model
 
@@ -27,7 +27,9 @@ if __name__ == '__main__':
 
     vocab_en = pickle.load(open('data/vocab_train_en.p', 'rb'))
     idx2word_en = vocab_en
+    print('len(idx2word_en): ' + str(len(idx2word_en)))
     word2idx_en = dict(zip(idx2word_en, range(len(vocab_en))))
+    print('vocab_size_en: ' + str(vocab_size_en))
 
     print(model.summary())
 
@@ -52,6 +54,7 @@ if __name__ == '__main__':
     for i in range(length):
         idx = samples[i]
         sentence_zh = data_zh[idx]
+        print(sentence_zh)
         input_en = []
         seg_list = jieba.cut(sentence_zh)
         for j, token in enumerate(seg_list):
@@ -68,11 +71,14 @@ if __name__ == '__main__':
     c0 = np.zeros((length, n_s))
     preds = model.predict([batch_x, s0, c0])
 
-    output_en = []
+
     for i in range(length):
-        output = preds[i]
+        output_en = []
         for t in range(Ty):
-            word_pred = idx2word_en[np.argmax(output)]
+            print('{} -> {}: '.format(i, t))
+            idx = np.argmax(preds[i][t])
+            print('idx: ' + str(idx))
+            word_pred = idx2word_en[]
             output_en.append(word_pred)
             if word_pred == stop_word:
                 break
