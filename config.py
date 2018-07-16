@@ -12,9 +12,9 @@ vocab_size_zh = 28800
 max_token_length_en = Tx = 26
 max_token_length_zh = Ty = 25
 # hidden state size of the post-attention LSTM
-n_s = 128
+n_s = 256
 # hidden state size of the Bi-LSTM
-n_a = 64
+n_a = 128
 
 
 train_folder = 'data/ai_challenger_translation_train_20170912'
