@@ -151,7 +151,7 @@ def build_samples():
     idx2word_en = vocab_en
     word2idx_en = dict(zip(idx2word_en, range(len(vocab_en))))
 
-    for usage in ['train', 'valid']:
+    for usage in ['valid']:
         if usage == 'train':
             translation_path_en = os.path.join(train_translation_folder, train_translation_en_filename)
             translation_path_zh = os.path.join(train_translation_folder, train_translation_zh_filename)
