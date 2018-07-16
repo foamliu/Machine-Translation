@@ -7,10 +7,10 @@ patience = 50
 num_train_samples = 9903244
 num_valid_samples = 8000
 embedding_size = 300
-vocab_size_en = 10000
-vocab_size_zh = 663567
-max_token_length_en = Tx = 50
-max_token_length_zh = Ty = 50
+vocab_size_en = 11500
+vocab_size_zh = 28800
+max_token_length_en = Tx = 26
+max_token_length_zh = Ty = 25
 # hidden state size of the post-attention LSTM
 n_s = 128
 # hidden state size of the Bi-LSTM
