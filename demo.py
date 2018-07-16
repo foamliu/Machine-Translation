@@ -70,6 +70,7 @@ if __name__ == '__main__':
     s0 = np.zeros((length, n_s))
     c0 = np.zeros((length, n_s))
     preds = model.predict([batch_x, s0, c0])
+    print('preds.shape: ' + str(preds.shape))
 
 
     for i in range(length):
