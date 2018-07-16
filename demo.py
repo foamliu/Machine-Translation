@@ -78,7 +78,7 @@ if __name__ == '__main__':
             print('{} -> {}: '.format(i, t))
             idx = np.argmax(preds[i][t])
             print('idx: ' + str(idx))
-            word_pred = idx2word_en[]
+            word_pred = idx2word_en[idx]
             output_en.append(word_pred)
             if word_pred == stop_word:
                 break
