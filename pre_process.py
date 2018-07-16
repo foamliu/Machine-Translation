@@ -135,12 +135,12 @@ def extract_valid_data():
     root = xml.etree.ElementTree.parse(valid_translation_path).getroot()
     data_en = [elem.text.strip() for elem in root.iter() if elem.tag == 'seg']
     with open(os.path.join(valid_translation_folder, 'valid.en'), 'w') as out_file:
-        out_file.writelines(data_en)
+        out_file.write('\n'.join(data_en) + '\n')
 
     root = xml.etree.ElementTree.parse(os.path.join(valid_translation_folder, 'valid.en-zh.zh.sgm')).getroot()
     data_zh = [elem.text.strip() for elem in root.iter() if elem.tag == 'seg']
     with open(os.path.join(valid_translation_folder, 'valid.zh'), 'w') as out_file:
-        out_file.writelines(data_zh)
+        out_file.write('\n'.join(data_zh) + '\n')
 
 
 def build_samples():

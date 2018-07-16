@@ -4,7 +4,7 @@ import numpy as np
 batch_size = 128
 epochs = 10000
 patience = 50
-num_train_samples = 9903244
+num_train_samples = 9269603
 num_valid_samples = 8000
 embedding_size = 300
 vocab_size_en = 11500
