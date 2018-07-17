@@ -49,36 +49,30 @@ if __name__ == '__main__':
     length = 10
     samples = random.sample(indices, length)
 
-    batch_x = np.zeros((length, Tx, embedding_size), np.float32)
-
     for i in range(length):
         idx = samples[i]
         sentence_zh = data_zh[idx]
         print(sentence_zh)
         input_en = []
         seg_list = jieba.cut(sentence_zh)
+        x = np.zeros((1, Tx, embedding_size), np.float32)
         for j, token in enumerate(seg_list):
             if token in vocab_set_zh:
                 word = token
-                batch_x[i, j] = word_vectors_zh[word]
+                x[0, j] = word_vectors_zh[word]
             else:
                 word = unknown_word
-                batch_x[i, j] = unknown_embedding
+                x[0, j] = unknown_embedding
 
-        batch_x[i, j + 1] = stop_embedding
+        x[0, j + 1] = stop_embedding
 
-    s0 = np.zeros((length, n_s))
-    c0 = np.zeros((length, n_s))
-    preds = model.predict([batch_x, s0, c0])
-    print('preds.shape: ' + str(preds.shape))
+        s0 = np.zeros((length, n_s))
+        c0 = np.zeros((length, n_s))
+        preds = model.predict([x, s0, c0])
 
-
-    for i in range(length):
         output_en = []
         for t in range(Ty):
-            print('{} -> {}: '.format(i, t))
-            idx = np.argmax(preds[i][t])
-            print('idx: ' + str(idx))
+            idx = np.argmax(preds[t][0])
             word_pred = idx2word_en[idx]
             output_en.append(word_pred)
             if word_pred == stop_word:
