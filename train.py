@@ -40,7 +40,7 @@ if __name__ == '__main__':
     if pretrained_path is not None:
         new_model.load_weights(pretrained_path)
 
-    sgd = keras.optimizers.SGD(lr=0.01, momentum=0.9, nesterov=True, clipnorm=5.)
+    sgd = keras.optimizers.SGD(lr=0.001, momentum=0.9, nesterov=True, clipnorm=5.)
     new_model.compile(optimizer=sgd, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     print(new_model.summary())
