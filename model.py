@@ -49,12 +49,14 @@ def build_model():
 
     X_dropout = Dropout(0.5)(X)
     a = Bidirectional(CuDNNLSTM(n_a, return_sequences=True))(X_dropout)
+    a = Dropout(0.5)(a)
     print('a.shape: ' + str(a.shape))
 
     for t in range(Ty):
         context = one_step_attention(a, s)
         context_dropout = Dropout(0.5)(context)
         s, _, c = CuDNNLSTM(n_s, return_state=True)(context_dropout, initial_state=[s, c])
+        s = Dropout(0.5)(s)
         out = Dense(vocab_size_en, activation='softmax', name='y_' + str(t))(s)
         outputs.append(out)
 
