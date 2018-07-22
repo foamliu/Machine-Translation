@@ -42,8 +42,7 @@ if __name__ == '__main__':
     if pretrained_path is not None:
         new_model.load_weights(pretrained_path)
 
-    decoder_target = tf.placeholder(dtype='int32', shape=(None, None))
-    new_model.compile(optimizer='adam', loss=sparse_loss, metrics=['accuracy'], target_tensors=[decoder_target])
+    new_model.compile(optimizer='adam', loss=sparse_loss, metrics=['accuracy'])
 
     print(new_model.summary())
 
