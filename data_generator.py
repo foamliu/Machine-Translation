@@ -1,6 +1,7 @@
 # encoding=utf-8
 import pickle
 
+import keras.backend as K
 import numpy as np
 from gensim.models import KeyedVectors
 from keras.utils import Sequence
@@ -63,6 +64,7 @@ class DataGenSequence(Sequence):
         return [batch_x, s0, c0], targets
 
     def on_epoch_end(self):
+        K.clear_session()
         np.random.shuffle(self.samples)
 
 
