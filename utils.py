@@ -24,7 +24,8 @@ def draw_str(dst, target, s):
 
 
 def sparse_loss(y_true, y_pred):
-    return tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+    loss_mean = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+    return tf.reduce_mean(loss_mean)
 
 
 def ensure_folder(folder):

@@ -57,7 +57,7 @@ def build_model():
         context_dropout = Dropout(0.5)(context)
         s, _, c = CuDNNLSTM(n_s, return_state=True)(context_dropout, initial_state=[s, c])
         s = Dropout(0.5)(s)
-        out = Dense(vocab_size_en, activation='softmax', name='y_' + str(t))(s)
+        out = Dense(vocab_size_en, activation='linear', name='y_' + str(t))(s)   # NOTE: changed from 'softmax'
         outputs.append(out)
 
     model = Model(inputs=[X, s0, c0], outputs=outputs)
