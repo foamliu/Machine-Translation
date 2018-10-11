@@ -4,7 +4,7 @@ import re
 import time
 import unicodedata
 
-import nltk
+import jieba
 from torch import nn
 
 from config import *
@@ -105,8 +105,9 @@ def normalizeString(s):
 
 
 def indexesFromSentence(voc, sentence):
-    words = [normalizeString(s) for s in nltk.word_tokenize(sentence)]
-    return encode_text(voc.word2index, words)
+    sentence_zh = sentence.strip()
+    seg_list = jieba.cut(sentence_zh)
+    return encode_text(voc.word2index, list(seg_list))
 
 
 class GreedySearchDecoder(nn.Module):
