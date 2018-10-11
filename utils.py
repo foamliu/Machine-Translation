@@ -192,6 +192,7 @@ def save_checkpoint(epoch, encoder, decoder, encoder_optimizer, decoder_optimize
     }
 
     if is_best:
+        ensure_folder(save_dir)
         filename = '{0}/checkpoint_{1}_{2:.3f}.tar'.format(save_dir, epoch, val_loss)
         torch.save(state, filename)
 
