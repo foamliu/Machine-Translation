@@ -1,127 +1,73 @@
+import json
 import os
-import pickle
 import xml.etree.ElementTree
-import zipfile
 from collections import Counter
 
 import jieba
 import nltk
-from gensim.models import KeyedVectors
 from tqdm import tqdm
 
-from config import start_word, stop_word, unknown_word, vocab_size_en, Tx, Ty
-from config import train_folder, valid_folder, test_a_folder, test_b_folder
+from config import output_lang_vocab_size, input_lang_vocab_size, max_len, UNK_token
 from config import train_translation_folder, train_translation_zh_filename, train_translation_en_filename
 from config import valid_translation_folder, valid_translation_zh_filename, valid_translation_en_filename
-from utils import ensure_folder
+from utils import normalizeString, encode_text
 
 
-def extract(folder):
-    filename = '{}.zip'.format(folder)
-    print('Extracting {}...'.format(filename))
-    with zipfile.ZipFile(filename, 'r') as zip_ref:
-        zip_ref.extractall('data')
-
-
-def build_train_vocab_en():
-    print('loading en word embedding')
-    translation_path = os.path.join(train_translation_folder, train_translation_en_filename)
-
-    with open(translation_path, 'r') as f:
-        data = f.readlines()
-
-    vocab = []
-    max_len = 0
-    lengthes = []
-    print('scanning train data (en)')
-    for sentence in tqdm(data):
-        tokens = nltk.word_tokenize(sentence.strip().lower())
-        for token in tokens:
-            vocab.append(token)
-        length = len(tokens)
-        lengthes.append(length)
-
-    counter_vocab = Counter(vocab)
-    counter_length = Counter(lengthes)
-    with open('data/counter_vocab_en', 'wb') as file:
-        pickle.dump(counter_vocab, file)
-    with open('data/counter_length_en', 'wb') as file:
-        pickle.dump(counter_length, file)
-    common = counter_vocab.most_common(vocab_size_en - 3)
-    covered_count = 0
-    for item in tqdm(common):
-        covered_count += item[1]
-
-    vocab = [item[0] for item in common]
-    vocab.append(start_word)
-    vocab.append(stop_word)
-    vocab.append(unknown_word)
-
-    print('max_len(en): ' + str(max_len))
-    print('count of words in text (en): ' + str(len(list(counter_vocab.keys()))))
-    print('vocab size (en): ' + str(len(vocab)))
-    total_count = len(list(counter_vocab.elements()))
-    print('coverage: ' + str(covered_count / total_count))
-
-    filename = 'data/vocab_train_en.p'
-    with open(filename, 'wb') as file:
-        pickle.dump(vocab, file)
-
-
-def build_train_vocab_zh():
-    print('loading word embedding(zh)')
-    word_vectors = KeyedVectors.load_word2vec_format('data/sgns.merge.char')
+def build_wordmap_zh():
     translation_path = os.path.join(train_translation_folder, train_translation_zh_filename)
 
     with open(translation_path, 'r') as f:
-        data = f.readlines()
+        sentences = f.readlines()
 
-    vocab = []
-    max_len = 0
-    lengthes = []
-    print('building {} train vocab (zh)')
-    for sentence in tqdm(data):
-        seg_list = jieba.cut(sentence.strip().lower())
+    word_freq = Counter()
 
-        length = 0
-        for word in seg_list:
-            vocab.append(word)
-            length = length + 1
+    for sentence in tqdm(sentences):
+        seg_list = jieba.cut(sentence.strip())
+        # Update word frequency
+        word_freq.update(list(seg_list))
 
-        lengthes.append(length)
+    # Create word map
+    # words = [w for w in word_freq.keys() if word_freq[w] > min_word_freq]
+    words = word_freq.most_common(output_lang_vocab_size - 4)
+    word_map = {k[0]: v + 4 for v, k in enumerate(words)}
+    word_map['<pad>'] = 0
+    word_map['<start>'] = 1
+    word_map['<end>'] = 2
+    word_map['<unk>'] = 3
+    print(len(word_map))
+    print(words[:10])
 
-    counter_vocab = Counter(vocab)
-    counter_length = Counter(lengthes)
-    with open('data/counter_vocab_zh', 'wb') as file:
-        pickle.dump(counter_vocab, file)
-    with open('data/counter_length_zh', 'wb') as file:
-        pickle.dump(counter_length, file)
+    with open('data/WORDMAP_zh.json', 'w') as file:
+        json.dump(word_map, file, indent=4)
 
-    total_count = 0
-    covered_count = 0
-    for word in tqdm(counter_vocab.keys()):
-        total_count += counter_vocab[word]
-        try:
-            v = word_vectors[word]
-            covered_count += counter_vocab[word]
-        except (NameError, KeyError):
-            # print(word)
-            pass
 
-    vocab = list(word_vectors.vocab.keys())
-    vocab.append(start_word)
-    vocab.append(stop_word)
-    vocab.append(unknown_word)
-    vocab = sorted(vocab)
+def build_wordmap_en():
+    translation_path = os.path.join(train_translation_folder, train_translation_en_filename)
 
-    print('max_len(zh): ' + str(max_len))
-    print('count of words in text (zh): ' + str(len(list(counter_vocab.keys()))))
-    print('CWV vocab size (zh): ' + str(len(vocab)))
-    print('coverage: ' + str(covered_count / total_count))
+    with open(translation_path, 'r') as f:
+        sentences = f.readlines()
 
-    filename = 'data/vocab_train_zh.p'
-    with open(filename, 'wb') as file:
-        pickle.dump(vocab, file)
+    word_freq = Counter()
+
+    for sentence in tqdm(sentences):
+        sentence_en = sentence.strip().lower()
+        tokens = [normalizeString(s) for s in nltk.word_tokenize(sentence_en)]
+        # Update word frequency
+        word_freq.update(tokens)
+
+    # Create word map
+    # words = [w for w in word_freq.keys() if word_freq[w] > min_word_freq]
+    words = word_freq.most_common(input_lang_vocab_size - 4)
+    word_map = {k[0]: v + 4 for v, k in enumerate(words)}
+    word_map['<pad>'] = 0
+    word_map['<start>'] = 1
+    word_map['<end>'] = 2
+    word_map['<unk>'] = 3
+    print(len(word_map))
+    print(words[:10])
+
+    with open('data/WORDMAP_en.json', 'w') as file:
+        json.dump(word_map, file, indent=4)
 
 
 def extract_valid_data():
@@ -144,22 +90,18 @@ def extract_valid_data():
 
 
 def build_samples():
-    vocab_zh = pickle.load(open('data/vocab_train_zh.p', 'rb'))
-    vocab_set_zh = set(vocab_zh)
-
-    vocab_en = pickle.load(open('data/vocab_train_en.p', 'rb'))
-    idx2word_en = vocab_en
-    word2idx_en = dict(zip(idx2word_en, range(len(vocab_en))))
+    word_map_zh = json.load(open('data/WORDMAP_zh.json', 'r'))
+    word_map_en = json.load(open('data/WORDMAP_en.json', 'r'))
 
     for usage in ['train', 'valid']:
         if usage == 'train':
             translation_path_en = os.path.join(train_translation_folder, train_translation_en_filename)
             translation_path_zh = os.path.join(train_translation_folder, train_translation_zh_filename)
-            filename = 'data/samples_train.p'
+            filename = 'data/samples_train.json'
         else:
             translation_path_en = os.path.join(valid_translation_folder, valid_translation_en_filename)
             translation_path_zh = os.path.join(valid_translation_folder, valid_translation_zh_filename)
-            filename = 'data/samples_valid.p'
+            filename = 'data/samples_valid.json'
 
         print('loading {} texts and vocab'.format(usage))
         with open(translation_path_en, 'r') as f:
@@ -171,58 +113,26 @@ def build_samples():
         print('building {} samples'.format(usage))
         samples = []
         for idx in tqdm(range(len(data_en))):
-            sentence_zh = data_zh[idx].strip().lower()
-            input_zh = []
-            seg_list = jieba.cut(sentence_zh)
-
-            for token in seg_list:
-                if token in vocab_set_zh:
-                    word = token
-                else:
-                    word = unknown_word
-                input_zh.append(word)
-            input_zh.append(stop_word)
-
             sentence_en = data_en[idx].strip().lower()
-            tokens = nltk.word_tokenize(sentence_en)
-            output_en = []
-            for j, token in enumerate(tokens):
-                try:
-                    idx = word2idx_en[token]
-                except (NameError, KeyError):
-                    idx = word2idx_en[unknown_word]
-                output_en.append(idx)
-            output_en.append(word2idx_en[stop_word])
+            tokens = [normalizeString(s) for s in nltk.word_tokenize(sentence_en)]
+            input_en = encode_text(word_map_en, tokens)
 
-            if len(input_zh) <= Tx and len(output_en) <= Ty:
-                samples.append({'input': list(input_zh), 'output': list(output_en)})
-        with open(filename, 'wb') as f:
-            pickle.dump(samples, f)
+            sentence_zh = data_zh[idx].strip()
+            seg_list = jieba.cut(sentence_zh)
+            output_zh = encode_text(word_map_zh, list(seg_list))
+
+            if len(input_en) <= max_len and len(
+                    output_zh) <= max_len and UNK_token not in input_en and UNK_token not in output_zh:
+                samples.append({'input': list(input_en), 'output': list(output_zh)})
+
+        with open(filename, 'w') as f:
+            json.dump(samples, f, indent=4)
+
         print('{} {} samples created at: {}.'.format(len(samples), usage, filename))
 
 
 if __name__ == '__main__':
-    ensure_folder('data')
-
-    if not os.path.isdir(train_folder):
-        extract(train_folder)
-
-    if not os.path.isdir(valid_folder):
-        extract(valid_folder)
-
-    if not os.path.isdir(test_a_folder):
-        extract(test_a_folder)
-
-    if not os.path.isdir(test_b_folder):
-        extract(test_b_folder)
-
-    if not os.path.isfile('data/vocab_train_zh.p'):
-        build_train_vocab_zh()
-
-    if not os.path.isfile('data/vocab_train_en.p'):
-        build_train_vocab_en()
-
+    build_wordmap_zh()
+    build_wordmap_en()
     extract_valid_data()
-
-    if not os.path.isfile('data/samples_train.p') or not os.path.isfile('data/samples_valid.p'):
-        build_samples()
+    build_samples()

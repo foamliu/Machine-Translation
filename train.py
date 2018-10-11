@@ -1,62 +1,245 @@
-import argparse
+import numpy as np
+from torch import optim
 
-import keras
-import tensorflow as tf
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+from data_gen import TranslationDataset
+from models import EncoderRNN, LuongAttnDecoderRNN
+from utils import *
 
-from config import patience, epochs, num_train_samples, num_valid_samples, batch_size
-from data_generator import train_gen, valid_gen
-from model import build_model
-from utils import ensure_folder, sparse_loss
+
+def train(input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder, encoder_optimizer,
+          decoder_optimizer):
+    # Zero gradients
+    encoder_optimizer.zero_grad()
+    decoder_optimizer.zero_grad()
+
+    # Set device options
+    input_variable = input_variable.to(device)
+    lengths = lengths.to(device)
+    target_variable = target_variable.to(device)
+    mask = mask.to(device)
+
+    # Initialize variables
+    loss = 0
+    print_losses = []
+    n_totals = 0
+
+    # Forward pass through encoder
+    encoder_outputs, encoder_hidden = encoder(input_variable, lengths)
+    # print('encoder_outputs.size(): ' + str(encoder_outputs.size()))
+    # print('encoder_hidden.size(): ' + str(encoder_hidden.size()))
+
+    # Create initial decoder input (start with SOS tokens for each sentence)
+    decoder_input = torch.LongTensor([[SOS_token for _ in range(batch_size)]])
+    decoder_input = decoder_input.to(device)
+    # print('decoder_input.size(): ' + str(decoder_input.size()))
+
+    # Set initial decoder hidden state to the encoder's final hidden state
+    decoder_hidden = encoder_hidden[:decoder.n_layers]
+    # print('decoder_hidden.size(): ' + str(decoder_hidden.size()))
+
+    # Determine if we are using teacher forcing this iteration
+    use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
+    # print('use_teacher_forcing: ' + str(use_teacher_forcing))
+
+    # Forward batch of sequences through decoder one time step at a time
+    if use_teacher_forcing:
+        for t in range(max_target_len):
+            decoder_output, decoder_hidden = decoder(
+                decoder_input, decoder_hidden, encoder_outputs
+            )
+            # Teacher forcing: next input is current target
+            decoder_input = target_variable[t].view(1, -1)
+            # Calculate and accumulate loss
+            mask_loss, nTotal = maskNLLLoss(decoder_output, target_variable[t], mask[t])
+            loss += mask_loss
+            print_losses.append(mask_loss.item() * nTotal)
+            n_totals += nTotal
+    else:
+        for t in range(max_target_len):
+            decoder_output, decoder_hidden = decoder(
+                decoder_input, decoder_hidden, encoder_outputs
+            )
+            # No teacher forcing: next input is decoder's own current output
+            _, topi = decoder_output.topk(1)
+            decoder_input = torch.LongTensor([[topi[i][0] for i in range(batch_size)]])
+            decoder_input = decoder_input.to(device)
+            # Calculate and accumulate loss
+            mask_loss, nTotal = maskNLLLoss(decoder_output, target_variable[t], mask[t])
+            loss += mask_loss
+            print_losses.append(mask_loss.item() * nTotal)
+            n_totals += nTotal
+
+    # Perform backpropatation
+    loss.backward()
+
+    # Clip gradients: gradients are modified in place
+    _ = torch.nn.utils.clip_grad_norm_(encoder.parameters(), clip)
+    _ = torch.nn.utils.clip_grad_norm_(decoder.parameters(), clip)
+
+    # Adjust model weights
+    encoder_optimizer.step()
+    decoder_optimizer.step()
+
+    return sum(print_losses) / n_totals
+
+
+def valid(input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder):
+    # Set device options
+    input_variable = input_variable.to(device)
+    lengths = lengths.to(device)
+    target_variable = target_variable.to(device)
+    mask = mask.to(device)
+
+    # Initialize variables
+    loss = 0
+    print_losses = []
+    n_totals = 0
+
+    with torch.no_grad():
+        # Forward pass through encoder
+        encoder_outputs, encoder_hidden = encoder(input_variable, lengths)
+
+        # Create initial decoder input (start with SOS tokens for each sentence)
+        decoder_input = torch.LongTensor([[SOS_token for _ in range(batch_size)]])
+        decoder_input = decoder_input.to(device)
+
+        # Set initial decoder hidden state to the encoder's final hidden state
+        decoder_hidden = encoder_hidden[:decoder.n_layers]
+
+        for t in range(max_target_len):
+            decoder_output, decoder_hidden = decoder(
+                decoder_input, decoder_hidden, encoder_outputs
+            )
+            _, topi = decoder_output.topk(1)
+            decoder_input = torch.LongTensor([[topi[i][0] for i in range(batch_size)]])
+            decoder_input = decoder_input.to(device)
+            # Calculate and accumulate loss
+            mask_loss, nTotal = maskNLLLoss(decoder_output, target_variable[t], mask[t])
+            loss += mask_loss
+            print_losses.append(mask_loss.item() * nTotal)
+            n_totals += nTotal
+
+    return sum(print_losses) / n_totals
+
+
+def main():
+    input_lang = Lang('data/WORDMAP_en.json')
+    output_lang = Lang('data/WORDMAP_zh.json')
+    print("input_lang.n_words: " + str(input_lang.n_words))
+    print("output_lang.n_words: " + str(output_lang.n_words))
+
+    train_data = TranslationDataset('train')
+    val_data = TranslationDataset('valid')
+
+    # Initialize encoder & decoder models
+    encoder = EncoderRNN(input_lang.n_words, hidden_size, encoder_n_layers, dropout)
+    decoder = LuongAttnDecoderRNN(attn_model, hidden_size, output_lang.n_words, decoder_n_layers, dropout)
+
+    # Use appropriate device
+    encoder = encoder.to(device)
+    decoder = decoder.to(device)
+
+    # Initialize optimizers
+    print('Building optimizers ...')
+    encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
+    decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
+
+    # Initializations
+    print('Initializing ...')
+    train_batch_time = ExpoAverageMeter()  # forward prop. + back prop. time
+    train_losses = ExpoAverageMeter()  # loss (per word decoded)
+    val_batch_time = ExpoAverageMeter()
+    val_losses = ExpoAverageMeter()
+
+    best_loss = 100000
+    epochs_since_improvement = 0
+
+    # Epochs
+    for epoch in range(start_epoch, epochs):
+        # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
+        if epochs_since_improvement == 20:
+            break
+        if epochs_since_improvement > 0 and epochs_since_improvement % 8 == 0:
+            adjust_learning_rate(decoder_optimizer, 0.8)
+            adjust_learning_rate(encoder_optimizer, 0.8)
+
+        # One epoch's training
+        # Ensure dropout layers are in train mode
+        encoder.train()
+        decoder.train()
+
+        start = time.time()
+
+        # Batches
+        for i_batch in range(len(train_data)):
+            input_variable, lengths, target_variable, mask, max_target_len = train_data[i_batch]
+            train_loss = train(input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder,
+                               encoder_optimizer, decoder_optimizer)
+
+            # Keep track of metrics
+            train_losses.update(train_loss)
+            train_batch_time.update(time.time() - start)
+
+            start = time.time()
+
+            # Print status
+            if i_batch % print_every == 0:
+                print('[{0}] Epoch: [{1}][{2}/{3}]\t'
+                      'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(timestamp(), epoch, i_batch,
+                                                                      len(train_data),
+                                                                      batch_time=train_batch_time,
+                                                                      loss=train_losses))
+
+        # One epoch's validation
+        start = time.time()
+
+        # Batches
+        for i_batch in range(len(val_data)):
+            input_variable, lengths, target_variable, mask, max_target_len = val_data[i_batch]
+            val_loss = valid(input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder)
+
+            # Keep track of metrics
+            val_losses.update(val_loss)
+            val_batch_time.update(time.time() - start)
+
+            start = time.time()
+
+            # Print status
+            if i_batch % print_every == 0:
+                print('Validation: [{0}/{1}]\t'
+                      'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(i_batch, len(val_data),
+                                                                      batch_time=val_batch_time,
+                                                                      loss=val_losses))
+
+        val_loss = val_losses.avg
+        print('\n * LOSS - {loss:.3f}\n'.format(loss=val_loss))
+
+        # Check if there was an improvement
+        is_best = val_loss < best_loss
+        best_loss = min(best_loss, val_loss)
+        if not is_best:
+            epochs_since_improvement += 1
+            print("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
+        else:
+            epochs_since_improvement = 0
+
+        save_checkpoint(epoch, encoder, decoder, encoder_optimizer, decoder_optimizer, input_lang, output_lang,
+                        val_loss, is_best)
+
+        # Initialize search module
+        searcher = GreedySearchDecoder(encoder, decoder)
+        for input_sentence, target_sentence in pick_n_valid_sentences(input_lang, output_lang, 10):
+            decoded_words = evaluate(searcher, input_sentence, input_lang, output_lang)
+            print('> {}'.format(input_sentence))
+            print('= {}'.format(target_sentence))
+            print('< {}'.format(''.join(decoded_words)))
+
+        # Reshuffle train and valid samples
+        np.random.shuffle(train_data.samples)
+        np.random.shuffle(val_data.samples)
+
 
 if __name__ == '__main__':
-    # Parse arguments
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-p", "--pretrained", help="path to save pretrained model files")
-    args = vars(ap.parse_args())
-    pretrained_path = args["pretrained"]
-    checkpoint_models_path = 'models/'
-
-    # Callbacks
-    tensor_board = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0, write_graph=True, write_images=True)
-    model_names = checkpoint_models_path + 'model.{epoch:02d}-{val_loss:.4f}.hdf5'
-    model_checkpoint = ModelCheckpoint(model_names, monitor='val_loss', verbose=1, save_best_only=True)
-    early_stop = EarlyStopping('val_loss', patience=patience)
-    reduce_lr = ReduceLROnPlateau('val_loss', factor=0.1, patience=int(patience / 4), verbose=1)
-
-
-    class MyCbk(keras.callbacks.Callback):
-        def __init__(self, model):
-            keras.callbacks.Callback.__init__(self)
-            self.model_to_save = model
-
-        def on_epoch_end(self, epoch, logs=None):
-            fmt = checkpoint_models_path + 'model.%02d-%.4f.hdf5'
-            self.model_to_save.save(fmt % (epoch, logs['val_loss']))
-
-
-    # folders
-    ensure_folder('models')
-
-    new_model = build_model()
-    if pretrained_path is not None:
-        new_model.load_weights(pretrained_path)
-
-    new_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_accuracy'])
-
-    print(new_model.summary())
-
-    # Final callbacks
-    callbacks = [tensor_board, model_checkpoint, early_stop, reduce_lr]
-
-    # Start Fine-tuning
-    new_model.fit_generator(train_gen(),
-                            steps_per_epoch=num_train_samples // batch_size,
-                            validation_data=valid_gen(),
-                            validation_steps=num_valid_samples // batch_size,
-                            epochs=epochs,
-                            verbose=1,
-                            callbacks=callbacks,
-                            use_multiprocessing=True,
-                            workers=4
-                            )
+    main()

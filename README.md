@@ -1,14 +1,12 @@
 # 中英机器文本翻译
 
-评测中英文本机器翻译的能力。机器翻译语言方向为中文中文英文x。
+评测中英文本机器翻译的能力。机器翻译语言方向为中文到英文。
 
 
 ## 依赖
 
-- [NumPy](http://docs.scipy.org/doc/numpy-1.10.1/user/install.html)
-- [Tensorflow](https://www.tensorflow.org/versions/r0.8/get_started/os_setup.html)
-- [Keras](https://keras.io/#installation)
-- [OpenCV](https://opencv-python-tutroals.readthedocs.io/en/latest/)
+- Python 3.5
+- PyTorch 0.4
 
 ## 数据集
 
@@ -31,10 +29,6 @@ $ python pre-process.py
 $ python train.py
 ```
 
-要想可视化训练过程，在终端中运行：
-```bash
-$ tensorboard --logdir path_to_current_dir/logs
-```
 
 ### Demo
 下载 [预训练模型](https://github.com/foamliu/Scene-Classification/releases/download/v1.0/model.85-0.7657.hdf5) 放在 models 目录然后执行:

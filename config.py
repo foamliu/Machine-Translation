@@ -1,22 +1,35 @@
+import json
 import os
-import numpy as np
 
-batch_size = 128
-epochs = 10000
-patience = 50
-num_train_samples = 9269603
-num_valid_samples = 7964
-embedding_size = 300
-vocab_size_en = 11500
-vocab_size_zh = 28800
-max_token_length_zh = Tx = 25 + 1   # 1 is for tailing stop word
-max_token_length_en = Ty = 26 + 1   # 1 is for tailing stop word
+import torch
 
-# hidden state size of the post-attention LSTM
-n_s = 256
-# hidden state size of the Bi-LSTM
-n_a = 128
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+# Configure training/optimization
+clip = 50.0
+teacher_forcing_ratio = .5
+learning_rate = 0.0001
+n_iteration = 4000
+print_every = 100
+save_every = 1
+workers = 1
+max_len = 10  # Maximum sentence length to consider
+min_word_freq = 20  # Minimum word count threshold for trimming
+save_dir = 'models'
+input_lang_vocab_size = 5000
+output_lang_vocab_size = 5000
+
+# Configure models
+model_name = 'cb_model'
+attn_model = 'general'
+start_epoch = 0
+epochs = 120
+hidden_size = 500
+encoder_n_layers = 2
+decoder_n_layers = 2
+dropout = 0.05
+batch_size = 100
+train_split = 0.9
 
 train_folder = 'data/ai_challenger_translation_train_20170912'
 valid_folder = 'data/ai_challenger_translation_validation_20170912'
@@ -29,9 +42,26 @@ train_translation_zh_filename = 'train.zh'
 valid_translation_en_filename = 'valid.en'
 valid_translation_zh_filename = 'valid.zh'
 
+# num_train_samples = 8206380
+# num_valid_samples = 7034
+
+# Default word tokens
+PAD_token = 0  # Used for padding short sentences
+SOS_token = 1  # Start-of-sentence token
+EOS_token = 2  # End-of-sentence token
+UNK_token = 3
+
 start_word = '<start>'
 stop_word = '<end>'
-unknown_word = '<UNK>'
-start_embedding = np.zeros((embedding_size,))
-stop_embedding = np.ones((embedding_size,))
-unknown_embedding = np.ones((embedding_size,)) / 2
+unknown_word = '<unk>'
+
+
+class Lang:
+    def __init__(self, filename):
+        word_map = json.load(open(filename, 'r'))
+        self.word2index = word_map
+        self.index2word = {v: k for k, v in word_map.items()}
+        self.n_words = len(word_map)
+
+
+
