@@ -4,8 +4,8 @@ from models import EncoderRNN, LuongAttnDecoderRNN
 from utils import *
 
 if __name__ == '__main__':
-    input_lang = Lang('data/WORDMAP_en.json')
-    output_lang = Lang('data/WORDMAP_zh.json')
+    input_lang = Lang('data/WORDMAP_zh.json')
+    output_lang = Lang('data/WORDMAP_en.json')
     print("input_lang.n_words: " + str(input_lang.n_words))
     print("output_lang.n_words: " + str(output_lang.n_words))
 
@@ -39,4 +39,4 @@ if __name__ == '__main__':
         decoded_words = evaluate(searcher, input_sentence, input_lang, output_lang)
         print('> {}'.format(input_sentence))
         print('= {}'.format(target_sentence))
-        print('< {}'.format(''.join(decoded_words)))
+        print('< {}'.format(' '.join(decoded_words)))
