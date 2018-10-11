@@ -21,7 +21,8 @@
 ### 数据预处理
 提取训练和验证样本：
 ```bash
-$ python pre-process.py
+$ extract.py
+$ python pre_process.py
 ```
 
 ### 训练
