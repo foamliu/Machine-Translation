@@ -8,7 +8,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Configure training/optimization
 clip = 50.0
 teacher_forcing_ratio = .5
-learning_rate = 0.002
+learning_rate = 0.0001
 n_iteration = 4000
 print_every = 100
 save_every = 1
@@ -28,7 +28,7 @@ hidden_size = 500
 encoder_n_layers = 2
 decoder_n_layers = 2
 dropout = 0.05
-chunk_size = 200
+chunk_size = 100
 train_split = 0.9
 
 train_folder = 'data/ai_challenger_translation_train_20170912'

@@ -51,7 +51,7 @@ def build_wordmap_en():
 
     for sentence in tqdm(sentences):
         sentence_en = sentence.strip().lower()
-        tokens = [normalizeString(s) for s in nltk.word_tokenize(sentence_en)]
+        tokens = [normalizeString(s) for s in nltk.word_tokenize(sentence_en) if len(normalizeString(s)) > 0]
         # Update word frequency
         word_freq.update(tokens)
 
@@ -113,16 +113,16 @@ def build_samples():
         print('building {} samples'.format(usage))
         samples = []
         for idx in tqdm(range(len(data_en))):
-            sentence_en = data_en[idx].strip().lower()
-            tokens = [normalizeString(s) for s in nltk.word_tokenize(sentence_en)]
-            output_en = encode_text(word_map_en, tokens)
-
             sentence_zh = data_zh[idx].strip()
             seg_list = jieba.cut(sentence_zh)
             input_zh = encode_text(word_map_zh, list(seg_list))
 
-            if len(output_en) <= max_len and len(
-                    input_zh) <= max_len and UNK_token not in output_en and UNK_token not in input_zh:
+            sentence_en = data_en[idx].strip().lower()
+            tokens = [normalizeString(s) for s in nltk.word_tokenize(sentence_en) if len(normalizeString(s)) > 0]
+            output_en = encode_text(word_map_en, tokens)
+
+            if len(input_zh) <= max_len and len(
+                    output_en) <= max_len and UNK_token not in input_zh and UNK_token not in output_en:
                 samples.append({'input': list(input_zh), 'output': list(output_en)})
 
         with open(filename, 'w') as f:
