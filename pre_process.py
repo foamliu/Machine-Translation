@@ -123,7 +123,7 @@ def build_samples():
 
             if len(input_en) <= max_len and len(
                     output_zh) <= max_len and UNK_token not in input_en and UNK_token not in output_zh:
-                samples.append({'input': list(input_en), 'output': list(output_zh)})
+                samples.append({'input': list(output_zh), 'output': list(input_en)})
 
         with open(filename, 'w') as f:
             json.dump(samples, f, indent=4)

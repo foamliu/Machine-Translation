@@ -169,8 +169,8 @@ def pick_n_valid_sentences(input_lang, output_lang, n):
     samples = random.sample(samples, n)
     result = []
     for sample in samples:
-        input_sentence = ' '.join([input_lang.index2word[token] for token in sample['input'] if token != EOS_token])
-        target_sentence = ''.join([output_lang.index2word[token] for token in sample['output'] if token != EOS_token])
+        input_sentence = ''.join([input_lang.index2word[token] for token in sample['input'] if token != EOS_token])
+        target_sentence = ' '.join([output_lang.index2word[token] for token in sample['output'] if token != EOS_token])
         result.append((input_sentence, target_sentence))
     return result
 

@@ -123,8 +123,8 @@ def valid(input_variable, lengths, target_variable, mask, max_target_len, encode
 
 
 def main():
-    input_lang = Lang('data/WORDMAP_en.json')
-    output_lang = Lang('data/WORDMAP_zh.json')
+    input_lang = Lang('data/WORDMAP_zh.json')
+    output_lang = Lang('data/WORDMAP_en.json')
     print("input_lang.n_words: " + str(input_lang.n_words))
     print("output_lang.n_words: " + str(output_lang.n_words))
 
@@ -234,7 +234,7 @@ def main():
             decoded_words = evaluate(searcher, input_sentence, input_lang, output_lang)
             print('> {}'.format(input_sentence))
             print('= {}'.format(target_sentence))
-            print('< {}'.format(''.join(decoded_words)))
+            print('< {}'.format(' '.join(decoded_words)))
 
         # Reshuffle train and valid samples
         np.random.shuffle(train_data.samples)
