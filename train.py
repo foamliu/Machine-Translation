@@ -148,10 +148,10 @@ def main():
 
     # Initializations
     print('Initializing ...')
-    train_batch_time = ExpoAverageMeter()  # forward prop. + back prop. time
+    train_batch_time = AverageMeter()  # forward prop. + back prop. time
     train_losses = ExpoAverageMeter()  # loss (per word decoded)
-    val_batch_time = ExpoAverageMeter()
-    val_losses = ExpoAverageMeter()
+    val_batch_time = AverageMeter()
+    val_losses = AverageMeter()
 
     best_loss = 100000
     epochs_since_improvement = 0
