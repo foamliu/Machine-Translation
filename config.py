@@ -28,7 +28,7 @@ hidden_size = 500
 encoder_n_layers = 2
 decoder_n_layers = 2
 dropout = 0.05
-batch_size = 100
+batch_size = 200
 train_split = 0.9
 
 train_folder = 'data/ai_challenger_translation_train_20170912'
