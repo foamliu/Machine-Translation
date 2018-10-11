@@ -115,15 +115,15 @@ def build_samples():
         for idx in tqdm(range(len(data_en))):
             sentence_en = data_en[idx].strip().lower()
             tokens = [normalizeString(s) for s in nltk.word_tokenize(sentence_en)]
-            input_en = encode_text(word_map_en, tokens)
+            output_en = encode_text(word_map_en, tokens)
 
             sentence_zh = data_zh[idx].strip()
             seg_list = jieba.cut(sentence_zh)
-            output_zh = encode_text(word_map_zh, list(seg_list))
+            input_zh = encode_text(word_map_zh, list(seg_list))
 
-            if len(input_en) <= max_len and len(
-                    output_zh) <= max_len and UNK_token not in input_en and UNK_token not in output_zh:
-                samples.append({'input': list(output_zh), 'output': list(input_en)})
+            if len(output_en) <= max_len and len(
+                    input_zh) <= max_len and UNK_token not in output_en and UNK_token not in input_zh:
+                samples.append({'input': list(input_zh), 'output': list(output_en)})
 
         with open(filename, 'w') as f:
             json.dump(samples, f, indent=4)

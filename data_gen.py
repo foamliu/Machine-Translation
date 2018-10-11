@@ -72,23 +72,23 @@ class TranslationDataset(Dataset):
         else:
             self.samples = samples[train_count:]
 
-        self.num_batches = len(self.samples) // batch_size
+        self.num_chunks = len(self.samples) // chunk_size
         np.random.shuffle(self.samples)
 
         print('count: ' + str(len(self.samples)))
 
     def __getitem__(self, i):
-        start_idx = i * batch_size
+        start_idx = i * chunk_size
         pair_batch = []
 
-        for i_batch in range(batch_size):
+        for i_batch in range(chunk_size):
             sample = self.samples[start_idx + i_batch]
             pair_batch.append((sample['input'], sample['output']))
 
         return batch2TrainData(pair_batch)
 
     def __len__(self):
-        return self.num_batches
+        return self.num_chunks
 
 
 if __name__ == '__main__':

@@ -29,7 +29,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     # print('encoder_hidden.size(): ' + str(encoder_hidden.size()))
 
     # Create initial decoder input (start with SOS tokens for each sentence)
-    decoder_input = torch.LongTensor([[SOS_token for _ in range(batch_size)]])
+    decoder_input = torch.LongTensor([[SOS_token for _ in range(chunk_size)]])
     decoder_input = decoder_input.to(device)
     # print('decoder_input.size(): ' + str(decoder_input.size()))
 
@@ -61,7 +61,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             )
             # No teacher forcing: next input is decoder's own current output
             _, topi = decoder_output.topk(1)
-            decoder_input = torch.LongTensor([[topi[i][0] for i in range(batch_size)]])
+            decoder_input = torch.LongTensor([[topi[i][0] for i in range(chunk_size)]])
             decoder_input = decoder_input.to(device)
             # Calculate and accumulate loss
             mask_loss, nTotal = maskNLLLoss(decoder_output, target_variable[t], mask[t])
@@ -100,7 +100,7 @@ def valid(input_variable, lengths, target_variable, mask, max_target_len, encode
         encoder_outputs, encoder_hidden = encoder(input_variable, lengths)
 
         # Create initial decoder input (start with SOS tokens for each sentence)
-        decoder_input = torch.LongTensor([[SOS_token for _ in range(batch_size)]])
+        decoder_input = torch.LongTensor([[SOS_token for _ in range(chunk_size)]])
         decoder_input = decoder_input.to(device)
 
         # Set initial decoder hidden state to the encoder's final hidden state
@@ -111,7 +111,7 @@ def valid(input_variable, lengths, target_variable, mask, max_target_len, encode
                 decoder_input, decoder_hidden, encoder_outputs
             )
             _, topi = decoder_output.topk(1)
-            decoder_input = torch.LongTensor([[topi[i][0] for i in range(batch_size)]])
+            decoder_input = torch.LongTensor([[topi[i][0] for i in range(chunk_size)]])
             decoder_input = decoder_input.to(device)
             # Calculate and accumulate loss
             mask_loss, nTotal = maskNLLLoss(decoder_output, target_variable[t], mask[t])
@@ -130,6 +130,8 @@ def main():
 
     train_data = TranslationDataset('train')
     val_data = TranslationDataset('valid')
+    print("len(train_data): " + str(len(train_data)))
+    print("len(val_data): " + str(len(val_data)))
 
     # Initialize encoder & decoder models
     encoder = EncoderRNN(input_lang.n_words, hidden_size, encoder_n_layers, dropout)
