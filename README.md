@@ -38,6 +38,8 @@ $ python train.py
 $ python demo.py
 ```
 
+下面第一行是中文例句（数据集），第二行是人翻英文例句（数据集），第三行是机翻（本模型）英文句子（实时生成）。
+
 <pre>
 > 我们总是记得我们写下来的。
 = we remember what we record .
