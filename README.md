@@ -12,7 +12,7 @@
 
 我们使用AI Challenger 2017中的英中机器文本翻译数据集，超过1000万的英中对照的句子对作为数据集合。其中，训练集合占据绝大部分，验证集合8000对，测试集A 8000条，测试集B 8000条。
 
-可以从这里下载：[英中翻译数据集](https://challenger.ai/datasets/translation)
+可以从这里下载：[英中翻译数据集](https://challenger.ai/)
 
 ![image](https://github.com/foamliu/Machine-Translation-v2/raw/master/images/dataset.png)
 
